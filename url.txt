@@ -1,2 +1,1 @@
-  Local URL: http://localhost:8503
-  Network URL: http://192.168.58.148:8503
+ Link dasboard: https://submission-sy2gcxbuwtub3bm6gpybqt.streamlit.app/
