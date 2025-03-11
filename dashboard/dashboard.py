@@ -1,18 +1,30 @@
-gitimport pandas as pd
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 from babel.numbers import format_currency
 import matplotlib.patches as mpatches
 sns.set(style='dark')
+import os
+
+
+
 
 # Judul Dashboard
 st.title("Dashboard Kualitas Udara di Kota Changping dan Dongling")
 
 # Load Data
-air_quality = pd.read_csv("main_data.csv")
-Data_Changping_df = pd.read_csv("Data_Changping.csv")
-Data_Dingling_df = pd.read_csv("Data_Dingling.csv")
+# Dapatkan path absolut dari folder tempat dashboard.py berada
+base_path = os.path.dirname(__file__)
+# Gabungkan dengan nama file
+main_data_path = os.path.join(base_path, "..", "dashboard", "main_data.csv")
+changping_data_path = os.path.join(base_path, "..", "data", "Data_Changping.csv")
+dingling_data_path = os.path.join(base_path, "..", "data", "Data_Dingling.csv")
+
+# Baca file CSV
+air_quality = pd.read_csv(main_data_path)
+Data_Changping_df = pd.read_csv(changping_data_path)
+Data_Dingling_df = pd.read_csv(dingling_data_path)
 
 # Sidebar Menu
 st.sidebar.title("Menu Navigasi")
