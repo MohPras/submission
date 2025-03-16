@@ -30,7 +30,7 @@ Data_Dingling_df = pd.read_csv(dingling_data_path)
 st.sidebar.title("Menu Navigasi")
 menu = st.sidebar.radio(
     "Pilih Halaman",
-    ["Data", "Statistik Data", "Kualitas Udara", "Polutan Tertinggi"]
+    ["Data", "Visualisasi polutan", "Kualitas Udara", "Polutan Tertinggi"]
 )
 
 # Halaman Data 
@@ -39,22 +39,59 @@ if menu == "Data":
 
     # Membuat filter tahun 
     tahun_tersedia = sorted(air_quality["year"].unique()) 
-    tahun_dipilih = st.selectbox("Pilih Tahun:", tahun_tersedia, index=len(tahun_tersedia)-1) 
+    tahun_dipilih = st.selectbox("Pilih Tahun:", tahun_tersedia, index=len(tahun_tersedia)-1)
+    state_tersedia = sorted(air_quality["station"].unique()) 
+    state_dipilih = st.selectbox("Pilih station:", state_tersedia, index=len(state_tersedia)-1) 
 
-    # Filter dataset berdasarkan tahun yang dipilih
-    data_filtered = air_quality[air_quality["year"] == tahun_dipilih]
-
+    # Filter dataset berdasarkan tahun dan station yang dipilih
+    data_filtered = air_quality[
+        (air_quality["year"] == tahun_dipilih) &
+        (air_quality["station"] == state_dipilih)
+    ]    
+    
     # Menampilkan jumlah data yang difilter
-    st.write(f"Menampilkan data untuk tahun **{tahun_dipilih}**. Jumlah data: **{len(data_filtered)}**")
+    st.write(f"Menampilkan data untuk tahun **{tahun_dipilih}**. Jumlah data: **{len(data_filtered)}**. Pada station: **{state_dipilih}**")
 
     # Menampilkan data dengan ukuran tabel yang bisa di-scroll
-    st.dataframe(data_filtered, height=500) 
+    st.dataframe(data_filtered, height=500)
 
+    # Menampilkan statistik jumlah data yang difilter
+    st.write(f"Menampilkan statistik data untuk tahun **{tahun_dipilih}**. Jumlah data: **{len(data_filtered)}**. Pada station: **{state_dipilih}**")
+    st.write(data_filtered.describe(), height=500)
 
-# Halaman Statistik Data
-elif menu == "Statistik Data":
-    st.title("Statistik Data")
-    st.write(air_quality.describe())
+# Halaman Filter Visualisasi Polutan Data
+elif menu == "Visualisasi polutan":
+    st.title("Visualisasi Polutan")
+
+    # Membuat filter data
+    tahun_dipilih = st.selectbox("Pilih tahun: ", sorted(air_quality["year"].unique()))
+    month_dipilih = st.selectbox("Pilih bulan: ", sorted(air_quality["month"].unique()))
+    station_dipilih = st.selectbox("Pilih station: ", sorted(air_quality["station"].unique()))
+    polutan_options = ["PM2.5", "PM10", "SO2", "NO2", "CO", "O3", "TEMP", "PRES", "DEWP", "RAIN", "wd", "WSPM"]
+    polutan_dipilih = st.selectbox("Pilih polutan: ", polutan_options)
+
+    # Filter Data berdasarkan tahun, bulan dan station yang dipilih
+    data_filtered = air_quality[
+        (air_quality["year"] == tahun_dipilih) &
+        (air_quality["month"] == month_dipilih) &
+        (air_quality["station"] == station_dipilih)
+    ]
+
+    # Cek apakah ada data setelah filter
+    if data_filtered.empty:
+        st.warning("Tidak ada data yang sesuai dengan filter yang dipilih.")
+    else:
+        # Visualisasi Line Chart
+        st.subheader(f"Tren {polutan_dipilih} di {station_dipilih} - {tahun_dipilih} Bulan {month_dipilih}")
+        fig, ax = plt.subplots(figsize=(10, 5))
+        sns.lineplot(data=data_filtered, x="day", y=polutan_dipilih, marker="o", ax=ax)
+        ax.set_xlabel("Hari")
+        ax.set_ylabel(f"Konsentrasi {polutan_dipilih}")
+        ax.set_title(f"Tren {polutan_dipilih} di {station_dipilih} ({tahun_dipilih} - Bulan {month_dipilih})")
+        ax.set_xticks(range(1, 32))  # Menampilkan angka tanggal 1-31
+        ax.grid(True)
+        st.pyplot(fig)
+
 
 # Halaman Visualisasi Kualitas Udara Terbaik Dan Terburuk 
 elif menu == "Kualitas Udara":
