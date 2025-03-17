@@ -95,95 +95,105 @@ elif menu == "Visualisasi polutan":
 
 # Halaman Visualisasi Kualitas Udara Terbaik Dan Terburuk 
 elif menu == "Kualitas Udara":
-    st.title("Visualisasi Kota Dengan Kualitas Udara Terbaik Dan Terburuk")
-    # ambil nilai tertinggi tiap polutan
-    air_quality["AQI"] = air_quality[["PM2.5", "PM10", "SO2", "NO2", "CO", "O3"]].max(axis=1)
+    st.title("Visualisasi Kualitas Udara Berdasarkan Tahun Dan Bulan")
 
-    # hitung rata-rata AQI
-    AQI = air_quality.groupby("station")["AQI"].mean().reset_index()
+    # Membuat filter data
+    tahun_dipilih = st.selectbox("Pilih tahun: ", sorted(air_quality["year"].unique()))
+    month_dipilih = st.selectbox("Pilih bulan: ", sorted(air_quality["month"].unique()))
 
-    # Urutkan berdasarkan AQI terbaik ke terburuk
-    AQI = AQI.sort_values(by="AQI", ascending=True)
-    best_city = AQI.iloc[0]
-    worst_city = AQI.iloc[-1]
+    # Filter Data berdasarkan tahun, bulan dan station yang dipilih
+    data_filtered = air_quality[
+        (air_quality["year"] == tahun_dipilih) &
+        (air_quality["month"] == month_dipilih)
+    ]
+    
+    # Jika tidak ada data untuk bulan yang dipilih
+    if data_filtered.empty:
+        st.warning(f"Tidak ada data untuk bulan {month_dipilih}.")
+    else:
+        # visualisasi kota terbaik dan terburuk dalam filter tahun dan bulan
+        # Hitung AQI sebagai nilai tertinggi dari polutan
+        data_filtered["AQI"] = data_filtered[["PM2.5", "PM10", "SO2", "NO2", "CO", "O3"]].max(axis=1)
 
-    # Data untuk plot
-    kota = [best_city["station"], worst_city["station"]]
-    aqi_values = [best_city["AQI"], worst_city["AQI"]]
+        # Hitung rata-rata AQI tiap kota
+        AQI = data_filtered.groupby("station")["AQI"].mean().reset_index()
 
-    # Set Biru = terbaik, Oranye = terburuk
-    colors = ["blue", "orange"]
+        # Urutkan berdasarkan AQI terbaik ke terburuk
+        AQI = AQI.sort_values(by="AQI", ascending=True)
+        best_city = AQI.iloc[0]
+        worst_city = AQI.iloc[-1]
 
-    # Plot kota terbaik dan terburuk kualitas udaranya
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.barh(kota, aqi_values, color=colors)
-    ax.set_ylabel("Kota")
-    ax.set_xlabel("AQI")
-    ax.set_title("Kota dengan Kualitas Udara Terbaik & Terburuk")
-    blue_patch = mpatches.Patch(color="blue", label="Udara baik")
-    orange_patch = mpatches.Patch(color="orange", label="Udara buruk")
-    ax.legend(handles=[blue_patch, orange_patch], loc="lower right")
-    st.pyplot(fig)
+        # Data untuk plot
+        kota = [best_city["station"], worst_city["station"]]
+        aqi_values = [best_city["AQI"], worst_city["AQI"]]
 
-    st.title("Kesimpulan")
-    st.write("Berdasarkan hasil analisa dan juga visualisasi grafik, kota Dingling memiliki kualitas udara terbaik dengan nilai AQI yang lebih rendah, menunjukkan udara yang lebih bersih dan sehat untuk dihuni. Sebaliknya kota Changping memiliki kualitas udara terburuk dengan nilai AQI yang lebih tinggi yang mengindikasikan tingkat polusi yang lebih tinggi karena jumlah polutanya banyak. Perbedaan ini menunjukkan bahwa faktor banyaknya polutan itu mempengaruhi kulitas udara kota.")
+        # Set warna biru = terbaik, oranye = terburuk
+        colors = ["blue", "orange"]
+
+        # Plot hasilnya
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.barh(kota, aqi_values, color=colors)
+        ax.set_ylabel("Kota")
+        ax.set_xlabel("Air Quality Index")
+        ax.set_title(f"Kualitas Udara Terbaik & Terburuk pada Bulan {month_dipilih} tahun {tahun_dipilih}")
+
+        # Tambahkan legenda
+        blue_patch = mpatches.Patch(color="blue", label="Udara terbaik")
+        orange_patch = mpatches.Patch(color="orange", label="Udara terburuk")
+        ax.legend(handles=[blue_patch, orange_patch], loc="lower right")
+
+        # Tampilkan plot di Streamlit
+        st.pyplot(fig)
+
+        # Tampilkan tabel polutan
+        st.subheader(f"Air Index Quality Pada Bulan {month_dipilih} Tahun {tahun_dipilih} Kota Changping Dan Dingling")
+        aqi_table = pd.DataFrame({
+            "Kota": [best_city["station"], worst_city["station"]],
+            "Air Quality Index": [round(best_city["AQI"], 2), round(worst_city["AQI"], 2)],
+            "Kategori": ["Terbaik", "Terburuk"]
+        })
+        st.dataframe(aqi_table)
 
 
 # Halaman Visualisasi Polutan Tertinggi Tiap Kota
 elif menu == "Polutan Tertinggi":
     st.title("Visualisasi Polutan Tertinggi Tiap Kota") 
 
-    # Pilih kolom polutan
-    polutan_kolom = ["PM2.5", "PM10", "SO2", "NO2", "CO", "O3"]
-    # Hitung rata-rata setiap polutan di Changping
-    changping_pollutants = Data_Changping_df[polutan_kolom].mean()
-
-    # Visualisasi Polutan tertinggi atau sering muncul di kota Changping
-    fig, ax = plt.subplots(figsize=(8, 5))
-    changping_pollutants.plot(kind="bar", color="blue")
-    ax.set_xlabel("Jenis Polutan")
-    ax.set_ylabel("Konsentrasi Rata-rata")
-    ax.set_title("Polutan Tertinggi di Changping")
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
-    ax.grid(axis="y", linestyle="--", alpha=0.7)
-    st.pyplot(fig)
+    # Membuat filter data
+    tahun_dipilih = st.selectbox("Pilih tahun: ", sorted(air_quality["year"].unique()))
+    month_dipilih = st.selectbox("Pilih bulan: ", sorted(air_quality["month"].unique()))
+    station_dipilih = st.selectbox("Pilih station: ", sorted(air_quality["station"].unique()))
 
 
-    # Pilih hanya kolom polutan
-    polutan_kolom = ["PM2.5", "PM10", "SO2", "NO2", "CO", "O3"]
-    # Hitung rata-rata setiap polutan di Changping
-    dongling_pollutants = Data_Dingling_df[polutan_kolom].mean()
+    # Filter Data berdasarkan tahun, bulan dan station yang dipilih
+    data_filtered = air_quality[
+        (air_quality["year"] == tahun_dipilih) &
+        (air_quality["month"] == month_dipilih) &
+        (air_quality["station"] == station_dipilih)
+    ]
 
-    # Visualisasi Polutan tertinggi atau sering muncul di kota Dongling
-    fig, ax = plt.subplots(figsize=(8, 5))
-    dongling_pollutants.plot(kind="bar", color="blue")
-    ax.set_xlabel("Jenis Polutan")
-    ax.set_ylabel("Konsentrasi Rata-rata")
-    ax.set_title("Polutan Tertinggi di Dongling")
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
-    ax.grid(axis="y", linestyle="--", alpha=0.7)
-    st.pyplot(fig)
+    # Cek apakah ada data setelah filter
+    if data_filtered.empty:
+        st.warning(f"Tidak ada data untuk {station_dipilih} pada bulan {month_dipilih} tahun {tahun_dipilih}.")
+    else:
+        st.subheader(f"Polutan Tertinggi di {station_dipilih} ({month_dipilih}/{tahun_dipilih})")
 
+        # Ambil nilai maksimum tiap polutan
+        polutan_cols = ["PM2.5", "PM10", "SO2", "NO2", "CO", "O3"]
+        max_polutan = data_filtered[polutan_cols].max()
 
-    st.title("Visualisasi Polutan Paling Sering Muncul di Setiap Kota")
+        # Buat dataframe untuk tabel
+        polutan_table = pd.DataFrame({
+            "Polutan": max_polutan.index,
+            "Konsentrasi Maksimum": max_polutan.values
+        })
 
-    # Pilih hanya kolom polutan
-    polutan_kolom = ["PM2.5", "PM10", "SO2", "NO2", "CO", "O3"]
-    air_quality[polutan_kolom] = air_quality[polutan_kolom].apply(pd.to_numeric, errors='coerce')
+        # Tampilkan tabel
+        st.dataframe(polutan_table)
 
-    # Kelompokkan berdasarkan kota dan hitung rata-rata setiap polutan
-    total_polutan = air_quality.groupby("station")[polutan_kolom].mean()
-
-    # Menentukan polutan tertinggi di setiap kota
-    dominan_polutan = total_polutan.idxmax(axis=1)
-
-    # Visualisasi distribusi polutan tiap kota
-    fig, ax = plt.subplots(figsize=(8, 5))
-    sns.heatmap(total_polutan, cmap="coolwarm", annot=True, fmt=".2f", linewidths=0.5)
-    ax.set_title("Polutan Paling Sering Muncul di Setiap Kota")
-    ax.set_xlabel("Jenis Polutan")
-    ax.set_ylabel("Kota")
-    st.pyplot(fig)
-
-    st.title("Kesimpulan")
-    st.write("Berdasarkan analisis data dan juga visualisasi grafik, polutan yang paling dominan di Changping adalah CO (Karbon Monoksida) dengan konsentrasi tertinggi sebesar 1160.04. Sementara itu, di Dingling polutan yang paling dominan juga adalah CO (Karbon Monoksida) dengan konsentrasi 924.76. Hal ini menunjukkan bahwa CO merupakan polutan yang paling banyak ditemukan di kedua kota tersebut.")
+        # Visualisasi bar chart polutan tertinggi
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.barh(max_polutan.index, max_polutan.values, color="skyblue")
+        ax.set_xlabel("Konsentrasi Maksimum")
+        ax.set_title(f"Polutan Tertinggi di {station_dipilih} ({month_dipilih}/{tahun_dipilih})")
+        st.pyplot(fig)
